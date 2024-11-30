@@ -1,25 +1,49 @@
-import { Request, Response, NextFunction } from "express"
+import { Request, Response, NextFunction } from "express";
 import { User } from "../models/user.model";
-import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken";
+import { ErrorResponse } from "../middlewares/errorHandler.middleware";
 
-export const register = async (req: Request, res: Response) => {
-    const {name, lastname, email, password, birthdate} = req.body;
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password, firstName, lastName, birthDate } = req.body;
 
-    const formattedDate = new Date(birthdate);
+    const user = await User.create({
+      email,
+      password,
+      firstName,
+      lastName,
+      birthDate,
+    });
 
-    const foundUser = await User.findOne({email})
+    res.status(201).json({ error: false, message: "Cuenta creada correctamente", user});
+  } catch (error) {
+    next(error);
+  }
+};
 
-    if(foundUser) return res.status(400).json({message: "El email ya esta en uso"})
+const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new ErrorResponse("Credenciales invalidas", 401));
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return next(new ErrorResponse("Contraseña incorrecta", 401));
+    }
 
-    const createdUser = await User.create({
-        birthdate: formattedDate,
-        name,
-        lastname,
-        password: hashedPassword,
-        email,
-    })  
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "", {
+      expiresIn: "1d",
+    });
 
-    return
-}
+    res.status(200).json({ success: true, token });
+  } catch (error) {
+    next(error);
+  }
+};
