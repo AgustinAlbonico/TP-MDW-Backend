@@ -1,25 +1,81 @@
-import { Request, Response, NextFunction } from "express"
+import { Request, Response, NextFunction } from "express";
 import { User } from "../models/user.model";
-import bcrypt from "bcrypt"
+import jwt from "jsonwebtoken";
+import { ErrorResponse } from "../middlewares/errorHandler.middleware";
+import { JWT_TOKEN } from "../config/env";
+import { error } from "console";
 
-export const register = async (req: Request, res: Response) => {
-    const {name, lastname, email, password, birthdate} = req.body;
+export const register = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password, name, lastname, birthdate } = req.body;
 
-    const formattedDate = new Date(birthdate);
+    const foundUser = await User.findOne({ email });
 
-    const foundUser = await User.findOne({email})
+    if (foundUser)
+      return next(new ErrorResponse("Ya existe un usuario con ese email", 400));
 
-    if(foundUser) return res.status(400).json({message: "El email ya esta en uso"})
+    const user = new User({
+      name,
+      lastname,
+      email,
+      password,
+      birthdate,
+    });
 
-    const hashedPassword = await bcrypt.hash(password, 10)
+    await user.save();
 
-    const createdUser = await User.create({
-        birthdate: formattedDate,
-        name,
-        lastname,
-        password: hashedPassword,
-        email,
-    })  
+    res
+      .status(201)
+      .json({ error: false, message: "Cuenta creada correctamente", user });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    return
+export const login = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return next(new ErrorResponse("Credenciales invalidas", 401));
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return next(new ErrorResponse("Contraseña incorrecta", 401));
+    }
+
+    const token = jwt.sign({ id: user._id }, JWT_TOKEN || "", {
+      expiresIn: "1d",
+    });
+
+    res.status(200).json({ error: false, token });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUser = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const user = await User.findById(req.user)
+
+    return res.status(200).json({
+      error: false,
+      user
+    })
+  } catch (error) {
+    next(error)
+  }
 }

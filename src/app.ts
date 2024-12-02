@@ -1,8 +1,8 @@
 import express from "express";
-import dotenv from "dotenv";
+import "dotenv/config"
 import cors from "cors";
-
-dotenv.config();
+import { userRouter, todoRouter } from "./routes";
+import { errorHandler } from "./middlewares/errorHandler.middleware";
 
 const app = express();
 
@@ -16,6 +16,11 @@ app.use(
 
 //Aca agregar las rutas
 
+app.use("/api/users", userRouter);
+app.use("/api/todos", todoRouter);
+
 //Aca agregar el middleware para controlar errores
+
+app.use(errorHandler);
 
 export default app;
