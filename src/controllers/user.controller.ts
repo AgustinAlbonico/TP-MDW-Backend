@@ -3,7 +3,6 @@ import { User } from "../models/user.model";
 import jwt from "jsonwebtoken";
 import { ErrorResponse } from "../middlewares/errorHandler.middleware";
 import { JWT_TOKEN } from "../config/env";
-import { error } from "console";
 
 export const register = async (
   req: Request,
@@ -71,7 +70,7 @@ export const getUser = async (
   try {
     const user = await User.findById(req.user)
 
-    return res.status(200).json({
+    res.status(200).json({
       error: false,
       user
     })
