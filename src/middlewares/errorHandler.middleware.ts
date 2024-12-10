@@ -18,7 +18,7 @@ const errorHandler = (
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
     error: true,
-    message: err.message || "Server Error",
+    message: err.message || "Error en el servidor",
   });
 };
 

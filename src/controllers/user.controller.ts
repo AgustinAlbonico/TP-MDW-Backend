@@ -56,7 +56,15 @@ export const login = async (
       expiresIn: "1d",
     });
 
-    res.status(200).json({ error: false, token });
+    const formatedUser = {
+      name: user.name,
+      lastname: user.lastname,
+      email: user.email,
+      birthdate: user.birthdate,
+      id: user._id
+    }
+
+    res.status(200).json({ error: false, token, message: "Sesión iniciada correctamente", user: formatedUser });
   } catch (error) {
     next(error);
   }
@@ -70,9 +78,17 @@ export const getUser = async (
   try {
     const user = await User.findById(req.user)
 
+    const formatedUser = {
+      name: user?.name,
+      lastname: user?.lastname,
+      email: user?.email,
+      birthdate: user?.birthdate,
+      id: user?._id
+    }
+
     res.status(200).json({
       error: false,
-      user
+      user: formatedUser
     })
   } catch (error) {
     next(error)

@@ -1,6 +1,7 @@
 import { NextFunction, Response, Request } from "express";
 import { Todo } from "../models/todo.model";
 import { ErrorResponse } from "../middlewares/errorHandler.middleware";
+import { error } from "console";
 
 export const createTodo = async (
   req: Request,
@@ -130,7 +131,7 @@ export const updateIsPinned = async (
 
     if (!todo) return next(new ErrorResponse("Nota no encontrada", 404));
 
-    if (isPinned) todo.isPinned = isPinned || false;
+    todo.isPinned = !todo.isPinned;
 
     await todo.save();
 
@@ -139,6 +140,35 @@ export const updateIsPinned = async (
       message: "Nota editada correctamente",
       todo,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const searchNotes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  let { query } = req.query;
+
+  query = String(query); //Si no hago esto me da problema el RegExp
+
+  if (!query) return next(new ErrorResponse("Query necesaria", 400));
+  try {
+    const matchedNotes = await Todo.find({
+      user: req.user,
+      $or: [
+        { title: { $regex: new RegExp(query, "i") } },
+        { description: { $regex: new RegExp(query, "i") } },
+      ],
+    });
+
+    res.status(200).json({
+      error: false,
+      todos: matchedNotes,
+      message: "Notas encontradas con éxito"
+    })
   } catch (error) {
     next(error);
   }

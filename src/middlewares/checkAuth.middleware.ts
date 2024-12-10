@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { ErrorResponse } from "./errorHandler.middleware";
-import { JWT_TOKEN, MONGODB_URI } from "../config/env";
+import { JWT_TOKEN } from "../config/env";
 
 interface IJwtPayload extends jwt.JwtPayload {
   id: string;
